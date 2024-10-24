@@ -76,6 +76,9 @@ func main() {
 			// 	continue
 			// }
 
+
+			c := ble.Characteristic(char.UUID().String())
+			
 			n, err := char.Read(buf)
 			if err != nil {
 				if strings.Contains(err.Error(), "Reading is not permitted.") {
@@ -86,7 +89,6 @@ func main() {
 				continue
 			}
 
-			c := ble.Characteristic(char.UUID().String())
 			if slices.Contains(ble.Characterstics, c) {
 				log.Printf("-- characteristic #%d: %s\n", i+1, c.Name())
 				log.Println("    data bytes", strconv.Itoa(n))

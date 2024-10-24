@@ -1,17 +1,10 @@
 package ble
 
-import "strings"
+import (
+	"slices"
+)
 
-// INFO:root:Enabling notification on char 00002a19-0000-1000-8000-00805f9b34fb
-// INFO:root:Enabling notification on char b5f90073-aa8d-11e3-9046-0002a5d5c51b
-// INFO:root:Enabling notification on char b5f90075-aa8d-11e3-9046-0002a5d5c51b
-// INFO:root:Enabling notification on char b5f90077-aa8d-11e3-9046-0002a5d5c51b
-// INFO:root:Enabling notification on char b5f90079-aa8d-11e3-9046-0002a5d5c51b
-// INFO:root:Enabling notification on char b5f90092-aa8d-11e3-9046-0002a5d5c51b
-// INFO:root:Enabling notification on char b5f90081-aa8d-11e3-9046-0002a5d5c51b
-// INFO:root:Enabling notification on char b5f90083-aa8d-11e3-9046-0002a5d5c51b
-// INFO:root:Enabling notification on char b5f90084-aa8d-11e3-9046-0002a5d5c51b
-
+// The following code is based on the bluetooth-low-energy spec defined at:
 // https://gopro.github.io/OpenGoPro/ble/protocol/ble_setup.html#ble-characteristics
 
 // wifi-access-point
@@ -79,9 +72,10 @@ var (
 	//
 	// GP-XXXX is shorthand for GoPro’s 128-bit UUID: b5f9XXXX-aa8d-11e3-9046-0002a5d5c51b
 	queryRespUuid Characteristic = Characteristic(format("0077"))
-	// TODO: move this
-	// modelCode           Characteristic = format("00002a26-0000-1000-8000-00805f9b34fb")
 )
+
+// used for debugging purposes
+var modelCode Characteristic = Characteristic(format("00002a26-0000-1000-8000-00805f9b34fb"))
 
 var (
 	Characterstics = []Characteristic{
@@ -93,9 +87,35 @@ var (
 		queryRespUuid,
 		wifiApSsidUuid,
 		wifiApPasswordUuid,
+		wifiApPowerUuid,
+		wifiApStateUuid,
 		networkMgmtReqUuid,
 		networkMgmtRespUuid,
-		// modelCode,
+		modelCode,
+	}
+
+	ReadableCharacteristics = []Characteristic{
+		wifiApSsidUuid,
+		wifiApSsidUuid,
+		wifiApStateUuid,
+		modelCode,
+	}
+
+	WriteableCharacteristics = []Characteristic{
+		wifiApSsidUuid,
+		wifiApPasswordUuid,
+		wifiApPowerUuid,
+		networkMgmtReqUuid,
+		cmdRequestUuid,
+		settingsReqUuid,
+		queryReqUuid,
+	}
+
+	NotifiableCharacteristics = []Characteristic{
+		networkMgmtRespUuid,
+		cmdResponseUuid,
+		settingsRespUuid,
+		queryRespUuid,
 	}
 )
 
@@ -134,8 +154,16 @@ func (c Characteristic) Name() string {
 	return name
 }
 
+func (c Characteristic) Readable() bool {
+	return slices.Contains(ReadableCharacteristics, c)
+}
+
+func (c Characteristic) Writeable() bool {
+	return slices.Contains(WriteableCharacteristics, c)
+}
+
 func (c Characteristic) Notifiable() bool {
-	return strings.Contains(c.Name(), "response")
+	return slices.Contains(NotifiableCharacteristics, c)
 }
 
 func (c Characteristic) String() string {
