@@ -76,38 +76,59 @@ func main() {
 			// 	continue
 			// }
 
-
-			c := ble.Characteristic(char.UUID().String())
-			
-			n, err := char.Read(buf)
-			if err != nil {
-				if strings.Contains(err.Error(), "Reading is not permitted.") {
-					log.Printf("reading not permitted for char #%d with uuid: %s\n", i+1, char.UUID().String())
-					continue
-				}
-				log.Println("    read error: ", err.Error())
+			uuid := char.UUID().String()
+			c := ble.Characteristic(uuid)
+			if !slices.Contains(ble.Characterstics, c) {
 				continue
 			}
 
-			if slices.Contains(ble.Characterstics, c) {
-				log.Printf("-- characteristic #%d: %s\n", i+1, c.Name())
+			log.Printf("-- characteristic #%d: %s[%s]\n", i+1, c.Name(), uuid)
+			log.Println("    readable=", c.Readable())
+			log.Println("    writable=", c.Writeable())
+			log.Println("    notifiable=", c.Notifiable())
+
+			if c.Readable() {
+				log.Println("reading")
+				n, err := char.Read(buf)
+				if err != nil {
+					if strings.Contains(err.Error(), "Reading is not permitted.") {
+						log.Printf("reading not permitted for char #%d with uuid: %s\n", i+1, char.UUID().String())
+						continue
+					}
+					log.Println("    read error: ", err.Error())
+					continue
+				}
 				log.Println("    data bytes", strconv.Itoa(n))
 				log.Println("    value =", string(buf[:n]))
-				log.Println("    notifiable ", c.Notifiable())
-			} else {
-				log.Printf("-- characteristic #%d: %s\n", i+1, c.String())
-				log.Println("    data bytes", strconv.Itoa(n))
-				log.Println("    value =", string(buf[:n]))
-				log.Println("    notifiable =", c.Notifiable())
 			}
 
-			// err = char.EnableNotifications(func(b []byte) {
-
-			// })
-			// if err != nil {
-			// 	// handle err
-			// }
-
+			if c.Notifiable() {
+				var notificationHandler func(buf []byte)
+				switch c {
+				case ble.NetworkMgmtRespUuid:
+					notificationHandler = func(buf []byte) {
+						// TODO: handle network mgmt response
+					}
+				case ble.CmdResponseUuid:
+					notificationHandler = func(buf []byte) {
+						// TODO: handle network mgmt response
+					}
+				case ble.SettingsRespUuid:
+					notificationHandler = func(buf []byte) {
+						// TODO: handle settings response
+					}
+				case ble.QueryRespUuid:
+					notificationHandler = func(buf []byte) {
+						// TODO: handle query response
+					}
+				default:
+					log.Printf("no notification handler registered for %s[%s]; skipping\n", c.Name(), uuid)
+					continue
+				}
+				if err := char.EnableNotifications(notificationHandler); err != nil {
+					log.Printf("failed to handle notification: %v\n", err)
+				}
+			}
 		}
 	}
 

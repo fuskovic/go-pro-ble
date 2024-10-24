@@ -12,21 +12,21 @@ var (
 	// GP-0002	WiFi AP SSID: Read + Write.
 	//
 	// GP-XXXX is shorthand for GoPro’s 128-bit UUID: b5f9XXXX-aa8d-11e3-9046-0002a5d5c51b
-	wifiApSsidUuid = Characteristic(format("0002"))
+	WifiApSsidUuid = Characteristic(format("0002"))
 
 	// GP-0003	WiFi AP Password: Read + Write
 	//
 	// GP-XXXX is shorthand for GoPro’s 128-bit UUID: b5f9XXXX-aa8d-11e3-9046-0002a5d5c51b
-	wifiApPasswordUuid = Characteristic(format("0003"))
+	WifiApPasswordUuid = Characteristic(format("0003"))
 
 	// GP-0004	WiFi AP Power: Write
 	//
 	// GP-XXXX is shorthand for GoPro’s 128-bit UUID: b5f9XXXX-aa8d-11e3-9046-0002a5d5c51b
-	wifiApPowerUuid = Characteristic(format("0004"))
+	WifiApPowerUuid = Characteristic(format("0004"))
 	// GP-0005	WiFi AP State: Read + Indicate
 	//
 	// GP-XXXX is shorthand for GoPro’s 128-bit UUID: b5f9XXXX-aa8d-11e3-9046-0002a5d5c51b
-	wifiApStateUuid = Characteristic(format("0005"))
+	WifiApStateUuid = Characteristic(format("0005"))
 )
 
 // camera-management
@@ -34,11 +34,11 @@ var (
 	// GP-0091	Network Management Command: Write
 	//
 	// GP-XXXX is shorthand for GoPro’s 128-bit UUID: b5f9XXXX-aa8d-11e3-9046-0002a5d5c51b
-	networkMgmtReqUuid Characteristic = Characteristic(format("0091"))
+	NetworkMgmtReqUuid Characteristic = Characteristic(format("0091"))
 	// GP-0092	Network Management Response: Notify
 	//
 	// GP-XXXX is shorthand for GoPro’s 128-bit UUID: b5f9XXXX-aa8d-11e3-9046-0002a5d5c51b
-	networkMgmtRespUuid Characteristic = Characteristic(format("0092"))
+	NetworkMgmtRespUuid Characteristic = Characteristic(format("0092"))
 )
 
 // control+query
@@ -46,76 +46,76 @@ var (
 	// GP-0072	Command:Write
 	//
 	// GP-XXXX is shorthand for GoPro’s 128-bit UUID: b5f9XXXX-aa8d-11e3-9046-0002a5d5c51b
-	cmdRequestUuid Characteristic = Characteristic(format("0072"))
+	CmdRequestUuid Characteristic = Characteristic(format("0072"))
 
 	// GP-0073	Command Response: Notify
 	//
 	// GP-XXXX is shorthand for GoPro’s 128-bit UUID: b5f9XXXX-aa8d-11e3-9046-0002a5d5c51b
-	cmdResponseUuid Characteristic = Characteristic(format("0073"))
+	CmdResponseUuid Characteristic = Characteristic(format("0073"))
 
 	// GP-0074	Settings: Write
 	//
 	// GP-XXXX is shorthand for GoPro’s 128-bit UUID: b5f9XXXX-aa8d-11e3-9046-0002a5d5c51b
-	settingsReqUuid Characteristic = Characteristic(format("0074"))
+	SettingsReqUuid Characteristic = Characteristic(format("0074"))
 
 	// GP-0075	Settings Response: Notify
 	//
 	// GP-XXXX is shorthand for GoPro’s 128-bit UUID: b5f9XXXX-aa8d-11e3-9046-0002a5d5c51b
-	settingsRespUuid Characteristic = Characteristic(format("0075"))
+	SettingsRespUuid Characteristic = Characteristic(format("0075"))
 
 	// GP-0076	Query: Write
 	//
 	// GP-XXXX is shorthand for GoPro’s 128-bit UUID: b5f9XXXX-aa8d-11e3-9046-0002a5d5c51b
-	queryReqUuid Characteristic = Characteristic(format("0076"))
+	QueryReqUuid Characteristic = Characteristic(format("0076"))
 
 	// GP-0077	Query Response: Notify
 	//
 	// GP-XXXX is shorthand for GoPro’s 128-bit UUID: b5f9XXXX-aa8d-11e3-9046-0002a5d5c51b
-	queryRespUuid Characteristic = Characteristic(format("0077"))
+	QueryRespUuid Characteristic = Characteristic(format("0077"))
 )
 
 // used for debugging purposes
-var modelCode Characteristic = Characteristic(format("00002a26-0000-1000-8000-00805f9b34fb"))
+var ModelCode Characteristic = Characteristic(format("00002a26-0000-1000-8000-00805f9b34fb"))
 
 var (
 	Characterstics = []Characteristic{
-		cmdRequestUuid,
-		cmdResponseUuid,
-		settingsReqUuid,
-		settingsRespUuid,
-		queryReqUuid,
-		queryRespUuid,
-		wifiApSsidUuid,
-		wifiApPasswordUuid,
-		wifiApPowerUuid,
-		wifiApStateUuid,
-		networkMgmtReqUuid,
-		networkMgmtRespUuid,
-		modelCode,
+		CmdRequestUuid,
+		CmdResponseUuid,
+		SettingsReqUuid,
+		SettingsRespUuid,
+		QueryReqUuid,
+		QueryRespUuid,
+		WifiApSsidUuid,
+		WifiApPasswordUuid,
+		WifiApPowerUuid,
+		WifiApStateUuid,
+		NetworkMgmtReqUuid,
+		NetworkMgmtRespUuid,
+		ModelCode,
 	}
 
 	ReadableCharacteristics = []Characteristic{
-		wifiApSsidUuid,
-		wifiApSsidUuid,
-		wifiApStateUuid,
-		modelCode,
+		WifiApSsidUuid,
+		WifiApSsidUuid,
+		WifiApStateUuid,
+		ModelCode,
 	}
 
 	WriteableCharacteristics = []Characteristic{
-		wifiApSsidUuid,
-		wifiApPasswordUuid,
-		wifiApPowerUuid,
-		networkMgmtReqUuid,
-		cmdRequestUuid,
-		settingsReqUuid,
-		queryReqUuid,
+		WifiApSsidUuid,
+		WifiApPasswordUuid,
+		WifiApPowerUuid,
+		NetworkMgmtReqUuid,
+		CmdRequestUuid,
+		SettingsReqUuid,
+		QueryReqUuid,
 	}
 
 	NotifiableCharacteristics = []Characteristic{
-		networkMgmtRespUuid,
-		cmdResponseUuid,
-		settingsRespUuid,
-		queryRespUuid,
+		NetworkMgmtRespUuid,
+		CmdResponseUuid,
+		SettingsRespUuid,
+		QueryRespUuid,
 	}
 )
 
@@ -124,29 +124,29 @@ type Characteristic string
 func (c Characteristic) Name() string {
 	var name string
 	switch c {
-	case cmdRequestUuid:
+	case CmdRequestUuid:
 		name = "command-request"
-	case cmdResponseUuid:
+	case CmdResponseUuid:
 		name = "command-response"
-	case settingsReqUuid:
+	case SettingsReqUuid:
 		name = "settings-request"
-	case settingsRespUuid:
+	case SettingsRespUuid:
 		name = "settings_response"
-	case queryReqUuid:
+	case QueryReqUuid:
 		name = "query-request"
-	case queryRespUuid:
+	case QueryRespUuid:
 		name = "query-response"
-	case wifiApSsidUuid:
+	case WifiApSsidUuid:
 		name = "wifi-access-point-ssid"
-	case wifiApPasswordUuid:
+	case WifiApPasswordUuid:
 		name = "wifi-access-point-password"
-	case wifiApPowerUuid:
+	case WifiApPowerUuid:
 		name = "wifi-access-point-power"
-	case wifiApStateUuid:
+	case WifiApStateUuid:
 		name = "wifi-access-point-state"
-	case networkMgmtReqUuid:
+	case NetworkMgmtReqUuid:
 		name = "network-management-request"
-	case networkMgmtRespUuid:
+	case NetworkMgmtRespUuid:
 		name = "network-management-response"
 	default:
 		name = "unknown"
