@@ -64,18 +64,9 @@ func main() {
 		}
 		if slices.Contains(ble.Services, s) {
 			log.Println("- service", s.Name())
-		} else {
-			log.Println("- service", srvc.UUID().String())
 		}
-		log.Printf("	%d characteristics\n", len(chars))
 
 		for i, char := range chars {
-			// mtu, err := char.GetMTU()
-			// if err != nil {
-			// 	log.Println("    mtu: error:", err.Error())
-			// 	continue
-			// }
-
 			uuid := char.UUID().String()
 			c := ble.Characteristic(uuid)
 			if !slices.Contains(ble.Characterstics, c) {
@@ -88,7 +79,6 @@ func main() {
 			log.Println("    notifiable=", c.Notifiable())
 
 			if c.Readable() {
-				log.Println("reading")
 				n, err := char.Read(buf)
 				if err != nil {
 					if strings.Contains(err.Error(), "Reading is not permitted.") {
@@ -98,11 +88,12 @@ func main() {
 					log.Println("    read error: ", err.Error())
 					continue
 				}
-				log.Println("    data bytes", strconv.Itoa(n))
-				log.Println("    value =", string(buf[:n]))
+				log.Println("    data-bytes=", strconv.Itoa(n))
+				log.Println("    value=", string(buf[:n]))
 			}
 
 			if c.Notifiable() {
+				continue
 				var notificationHandler func(buf []byte)
 				switch c {
 				case ble.NetworkMgmtRespUuid:

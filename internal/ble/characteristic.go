@@ -96,7 +96,7 @@ var (
 
 	ReadableCharacteristics = []Characteristic{
 		WifiApSsidUuid,
-		WifiApSsidUuid,
+		WifiApPasswordUuid,
 		WifiApStateUuid,
 		ModelCode,
 	}
