@@ -19,6 +19,7 @@ var (
 type Adapter interface {
 	Write(Characteristic, []byte) (int, error)
 	Read(Characteristic, []byte) (int, error)
+	ReadString(Characteristic) (string, error)
 	Close() error
 }
 
@@ -53,6 +54,16 @@ func (a *adapter) Read(c Characteristic, b []byte) (int, error) {
 		return -1, ErrCharacteristicNotFound
 	}
 	return char.Read(b)
+}
+
+func (a *adapter) ReadString(c Characteristic) (string, error) {
+	b :=make([]byte, 255)
+	n, err := a.Read(c, b)
+	if err != nil {
+		return "", fmt.Errorf("failed to read characteristic: %v", err)
+	}
+	log.Printf("read %d bytes", n)
+	return string(b[:n]), nil
 }
 
 func (a *adapter) Close() error {
@@ -99,19 +110,18 @@ func NewAdapter() (Adapter, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to descover services: %s", err)
 	}
-	log.Printf("discovered %d services\n", len(srvcs))
 
 	for _, srvc := range srvcs {
 		s := Service(srvc.UUID().String())
+		if !slices.Contains(Services, s) {
+			continue
+		}
+		log.Println("- service", s.Name())
 
 		chars, err := srvc.DiscoverCharacteristics(nil)
 		if err != nil {
 			log.Printf("failed to discover service characteristics: %s\n", err)
 			continue
-		}
-
-		if slices.Contains(Services, s) {
-			log.Println("- service", s.Name())
 		}
 
 		for i, char := range chars {
@@ -122,7 +132,6 @@ func NewAdapter() (Adapter, error) {
 			}
 
 			a.characteristics[c] = &char
-			log.Printf("provisioned %s characeristic", c.Name())
 			log.Printf("-- characteristic #%d: %s[%s]\n", i+1, c.Name(), uuid)
 			log.Println("    readable=", c.Readable())
 			log.Println("    writable=", c.Writeable())

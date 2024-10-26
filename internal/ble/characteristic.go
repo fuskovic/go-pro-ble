@@ -75,7 +75,7 @@ var (
 )
 
 // used for debugging purposes
-var ModelCode Characteristic = Characteristic(format("00002a26-0000-1000-8000-00805f9b34fb"))
+var ModelCode Characteristic = Characteristic("00002a26-0000-1000-8000-00805f9b34fb")
 
 var (
 	Characterstics = []Characteristic{
@@ -120,7 +120,6 @@ var (
 )
 
 type Characteristic string
-
 
 func (c Characteristic) Name() string {
 	var name string
