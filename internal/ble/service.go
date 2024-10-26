@@ -1,32 +1,38 @@
 package ble
 
+// Service is the ble service registered on the device.
+type Service struct {
+	uuid string
+	name string
+}
+
+// read-only fields
+func (s Service) Uuid() string { return s.uuid }
+func (s Service) Name() string { return s.name }
+
+var Services = []Service{
+	wifiAccessPoint,
+	cameraNetworkMgmt,
+	ctrlAndQuery,
+	internal,
+}
+
 // https://gopro.github.io/OpenGoPro/ble/protocol/ble_setup.html#ble-characteristics
 var (
-	wifiAccessPoint   = Service(format("0001"))
-	cameraNetworkMgmt = Service(format("0090"))
-	ctrlAndQuery      = Service("0000fea6-0000-1000-8000-00805f9b34fb")
-	internal          = Service("00002a19-0000-1000-8000-00805f9b34fb")
-)
-
-var Services = []Service{wifiAccessPoint, cameraNetworkMgmt, ctrlAndQuery}
-
-// Service is the ble service registered on the device.
-type Service string
-
-// Prints the human-readable name for the service.
-func (s Service) Name() string {
-	var name string
-	switch s {
-	case wifiAccessPoint:
-		name = "wifi-access-point"
-	case cameraNetworkMgmt:
-		name = "camera-network-management"
-	case ctrlAndQuery:
-		name = "control-and-query"
-	case internal:
-		name = "internal"
-	default:
-		name = "unknown"
+	wifiAccessPoint = Service{
+		uuid: format("0001"),
+		name: "wifi-access-point",
 	}
-	return name
-}
+	cameraNetworkMgmt = Service{
+		uuid: format("0090"),
+		name: "camera-network-management",
+	}
+	ctrlAndQuery = Service{
+		uuid: "0000fea6-0000-1000-8000-00805f9b34fb",
+		name: "control-and-query",
+	}
+	internal = Service{
+		uuid: "00002a19-0000-1000-8000-00805f9b34fb",
+		name: "internal",
+	}
+)

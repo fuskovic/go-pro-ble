@@ -19,12 +19,9 @@ func main() {
 	wg.Add(1)
 	go adapter.HandleNotifications(func(c ble.Characteristic, b []byte) error {
 		if len(b) >= 3 {
+			// Second byte is the command ID. Third byte is the status.
 			// https://gopro.github.io/OpenGoPro/tutorials/parse-ble-responses#responses-with-payload
-			// Second byte is the command ID
-			cmdID := b[1]
-			// Third byte is the status
-			status := b[2]
-
+			cmdID, status := b[1], b[2]
 			if cmdID == ble.WifiApToggleCmdID {
 				log.Println("received response from wifi-access-point-toggle")
 				if status == byte(ble.TLV_RESPONSE_SUCCESS) {
@@ -39,18 +36,18 @@ func main() {
 	})
 
 	log.Println("enabling wifi-access-point")
-	if _, err := adapter.Write(ble.CmdRequestUuid, ble.WifiApControlEnable); err != nil {
+	if _, err := adapter.Write(ble.CmdRequest, ble.WifiApControlEnable); err != nil {
 		log.Printf("failed to enable wifi access point: %v\n", err)
 		return
 	}
 
-	wifiSsid, err := adapter.ReadString(ble.WifiApSsidUuid)
+	wifiSsid, err := adapter.ReadString(ble.WifiApSsid)
 	if err != nil {
 		log.Printf("failed to read wifi ssid: %v\n", err)
 		return
 	}
 
-	wifiPw, err := adapter.ReadString(ble.WifiApPasswordUuid)
+	wifiPw, err := adapter.ReadString(ble.WifiApPassword)
 	if err != nil {
 		log.Printf("failed to read wifi password: %v\n", err)
 		return

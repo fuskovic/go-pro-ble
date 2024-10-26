@@ -31,63 +31,10 @@ type Adapter interface {
 	Close() error
 }
 
-type notification struct {
-	*bytes.Buffer
-	characteristic Characteristic
-}
-
 type adapter struct {
 	notifications   chan *notification
 	device          *bluetooth.Device
 	characteristics map[Characteristic]*bluetooth.DeviceCharacteristic
-}
-
-func (a *adapter) Write(c Characteristic, b []byte) (int, error) {
-	if !c.Writeable() {
-		return -1, ErrPermissionDenied
-	}
-	char, ok := a.characteristics[c]
-	if !ok {
-		return -1, ErrCharacteristicNotFound
-	}
-	return char.Write(b)
-}
-
-func (a *adapter) Read(c Characteristic, b []byte) (int, error) {
-	if !c.Readable() {
-		return -1, ErrPermissionDenied
-	}
-	char, ok := a.characteristics[c]
-	if !ok {
-		return -1, ErrCharacteristicNotFound
-	}
-	return char.Read(b)
-}
-
-func (a *adapter) ReadString(c Characteristic) (string, error) {
-	b := make([]byte, 255)
-	n, err := a.Read(c, b)
-	if err != nil {
-		return "", fmt.Errorf("failed to read characteristic: %v", err)
-	}
-	log.Printf("read %d bytes", n)
-	return string(b[:n]), nil
-}
-
-func (a *adapter) HandleNotifications(handler func(c Characteristic, b []byte) error) error {
-	log.Println("listening for notifications")
-	for n := range a.notifications {
-		log.Printf("received notification from %s\n", n.characteristic.Name())
-		if err := handler(n.characteristic, n.Bytes()); err != nil {
-			return fmt.Errorf("failed to handle notification for %s characteristic: %v", n.characteristic.Name(), err)
-		}
-	}
-	log.Println("done handling notifications")
-	return nil
-}
-
-func (a *adapter) Close() error {
-	return a.device.Disconnect()
 }
 
 // NewAdapter initializes a new bluetooth interface for reading and writing to various
@@ -134,34 +81,44 @@ func NewAdapter() (Adapter, error) {
 	}
 
 	for _, srvc := range srvcs {
-		s := Service(srvc.UUID().String())
-		if !slices.Contains(Services, s) {
-			log.Printf("service %q not recognized", srvc.UUID().String())
-		} else {
-			log.Println("- service", s.Name())
+		var s Service
+		if !slices.ContainsFunc(Services, func(svc Service) bool {
+			if svc.uuid == srvc.UUID().String() {
+				s = svc
+				return true
+			}
+			return false
+		}) {
+			continue
 		}
 
 		chars, err := srvc.DiscoverCharacteristics(nil)
 		if err != nil {
-			log.Printf("failed to discover service characteristics: %s\n", err)
+			log.Printf("failed to discover service characteristics: %v\n", err)
 			continue
 		}
 
 		for i, char := range chars {
 			uuid := char.UUID().String()
-			c := Characteristic(uuid)
-			if !slices.Contains(Characterstics, c) {
-				log.Printf("characteristic %q not recognized", uuid)
+			var c Characteristic
+			if !slices.ContainsFunc(Characterstics, func(characteristic Characteristic) bool {
+				if characteristic.uuid == uuid {
+					c = characteristic
+					return true
+				}
+				return false
+			}) {
 				continue
 			}
 
 			a.characteristics[c] = &char
-			log.Printf("-- characteristic #%d: %s[%s]\n", i+1, c.Name(), uuid)
-			log.Println("    readable=", c.Readable())
-			log.Println("    writable=", c.Writeable())
-			log.Println("    notifiable=", c.Notifiable())
+			log.Println("- service", s.Name())
+			log.Printf("-- characteristic #%d: %s[%s]\n", i+1, c.name, uuid)
+			log.Println("    readable=", c.readable)
+			log.Println("    writable=", c.writeable)
+			log.Println("    notifiable=", c.notifiable)
 
-			if c.Notifiable() {
+			if c.notifiable {
 				notificationHandler := func(buf []byte) {
 					a.notifications <- &notification{
 						Buffer:         bytes.NewBuffer(buf),
@@ -169,10 +126,63 @@ func NewAdapter() (Adapter, error) {
 					}
 				}
 				if err := char.EnableNotifications(notificationHandler); err != nil {
-					log.Printf("failed to handle notification for %s characteristic: %v\n", c.Name(), err)
+					log.Printf("failed to handle notification for %s characteristic: %v\n", c.name, err)
 				}
 			}
 		}
 	}
 	return a, nil
+}
+
+func (a *adapter) Write(c Characteristic, b []byte) (int, error) {
+	if !c.writeable {
+		return -1, ErrPermissionDenied
+	}
+	char, ok := a.characteristics[c]
+	if !ok {
+		return -1, ErrCharacteristicNotFound
+	}
+	return char.Write(b)
+}
+
+func (a *adapter) Read(c Characteristic, b []byte) (int, error) {
+	if !c.readable {
+		return -1, ErrPermissionDenied
+	}
+	char, ok := a.characteristics[c]
+	if !ok {
+		return -1, ErrCharacteristicNotFound
+	}
+	return char.Read(b)
+}
+
+func (a *adapter) ReadString(c Characteristic) (string, error) {
+	b := make([]byte, 255)
+	n, err := a.Read(c, b)
+	if err != nil {
+		return "", fmt.Errorf("failed to read characteristic: %v", err)
+	}
+	log.Printf("read %d bytes", n)
+	return string(b[:n]), nil
+}
+
+type notification struct {
+	*bytes.Buffer
+	characteristic Characteristic
+}
+
+func (a *adapter) HandleNotifications(handler func(c Characteristic, b []byte) error) error {
+	log.Println("listening for notifications")
+	for n := range a.notifications {
+		log.Printf("received notification from %s\n", n.characteristic.name)
+		if err := handler(n.characteristic, n.Bytes()); err != nil {
+			return fmt.Errorf("failed to handle notification for %s characteristic: %v", n.characteristic.name, err)
+		}
+	}
+	log.Println("done handling notifications")
+	return nil
+}
+
+func (a *adapter) Close() error {
+	return a.device.Disconnect()
 }
