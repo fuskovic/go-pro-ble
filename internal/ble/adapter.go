@@ -101,7 +101,6 @@ func NewAdapter() (Adapter, error) {
 	}
 	log.Printf("discovered %d services\n", len(srvcs))
 
-	// buffer to retrieve characteristic data
 	for _, srvc := range srvcs {
 		s := Service(srvc.UUID().String())
 
