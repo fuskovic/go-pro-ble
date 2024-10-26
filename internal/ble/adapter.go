@@ -12,14 +12,22 @@ import (
 )
 
 var (
-	ErrPermissionDenied       = errors.New("permission denied")
+	// ErrPermissionDenied is returned when an operation is attempted on a ble
+	// characteristic that does not have support for the operation.
+	ErrPermissionDenied = errors.New("permission denied")
+
+	// ErrCharacteristicNotFound is returned when the target characteristic
+	// is not supported by the ble adapter.
 	ErrCharacteristicNotFound = errors.New("characteristic not found")
 )
 
+// Adapter is a bluetooth interface that supports reading and writing to
+// ble service characteristics.
 type Adapter interface {
 	Write(Characteristic, []byte) (int, error)
 	Read(Characteristic, []byte) (int, error)
 	ReadString(Characteristic) (string, error)
+	HandleNotifications(func(Characteristic, []byte) error) error
 	Close() error
 }
 
@@ -57,7 +65,7 @@ func (a *adapter) Read(c Characteristic, b []byte) (int, error) {
 }
 
 func (a *adapter) ReadString(c Characteristic) (string, error) {
-	b :=make([]byte, 255)
+	b := make([]byte, 255)
 	n, err := a.Read(c, b)
 	if err != nil {
 		return "", fmt.Errorf("failed to read characteristic: %v", err)
@@ -66,10 +74,24 @@ func (a *adapter) ReadString(c Characteristic) (string, error) {
 	return string(b[:n]), nil
 }
 
+func (a *adapter) HandleNotifications(handler func(c Characteristic, b []byte) error) error {
+	log.Println("listening for notifications")
+	for n := range a.notifications {
+		log.Printf("received notification from %s\n", n.characteristic.Name())
+		if err := handler(n.characteristic, n.Bytes()); err != nil {
+			return fmt.Errorf("failed to handle notification for %s characteristic: %v", n.characteristic.Name(), err)
+		}
+	}
+	log.Println("done handling notifications")
+	return nil
+}
+
 func (a *adapter) Close() error {
 	return a.device.Disconnect()
 }
 
+// NewAdapter initializes a new bluetooth interface for reading and writing to various
+// ble service characteristics as well as listening for notifications.
 func NewAdapter() (Adapter, error) {
 	tinyGoAdapter := bluetooth.DefaultAdapter
 	if err := tinyGoAdapter.Enable(); err != nil {
@@ -114,9 +136,10 @@ func NewAdapter() (Adapter, error) {
 	for _, srvc := range srvcs {
 		s := Service(srvc.UUID().String())
 		if !slices.Contains(Services, s) {
-			continue
+			log.Printf("service %q not recognized", srvc.UUID().String())
+		} else {
+			log.Println("- service", s.Name())
 		}
-		log.Println("- service", s.Name())
 
 		chars, err := srvc.DiscoverCharacteristics(nil)
 		if err != nil {
@@ -128,6 +151,7 @@ func NewAdapter() (Adapter, error) {
 			uuid := char.UUID().String()
 			c := Characteristic(uuid)
 			if !slices.Contains(Characterstics, c) {
+				log.Printf("characteristic %q not recognized", uuid)
 				continue
 			}
 

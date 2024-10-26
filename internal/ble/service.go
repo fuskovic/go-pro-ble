@@ -4,7 +4,8 @@ package ble
 var (
 	wifiAccessPoint   = Service(format("0001"))
 	cameraNetworkMgmt = Service(format("0090"))
-	ctrlAndQuery      = Service(format("FEA6"))
+	ctrlAndQuery      = Service("0000fea6-0000-1000-8000-00805f9b34fb")
+	internal          = Service("00002a19-0000-1000-8000-00805f9b34fb")
 )
 
 var Services = []Service{wifiAccessPoint, cameraNetworkMgmt, ctrlAndQuery}
@@ -22,6 +23,8 @@ func (s Service) Name() string {
 		name = "camera-network-management"
 	case ctrlAndQuery:
 		name = "control-and-query"
+	case internal:
+		name = "internal"
 	default:
 		name = "unknown"
 	}
