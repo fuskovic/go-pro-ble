@@ -121,6 +121,7 @@ var (
 
 type Characteristic string
 
+
 func (c Characteristic) Name() string {
 	var name string
 	switch c {
