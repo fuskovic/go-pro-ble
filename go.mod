@@ -1,4 +1,4 @@
-module github.com/fuskovic/go-pro-sdk
+module github.com/fuskovic/go-pro-ble
 
 go 1.23.2
 
