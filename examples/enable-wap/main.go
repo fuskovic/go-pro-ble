@@ -35,7 +35,7 @@ func main() {
 	})
 
 	log.Println("enabling wifi-access-point")
-	if _, err := adapter.Write(ble.CmdRequest, ble.WifiApControlEnable); err != nil {
+	if _, err := adapter.Write(ble.CmdRequest, ble.WIFI_AP_CONTROL_ENABLE); err != nil {
 		log.Fatalf("failed to enable wifi access point: %v\n", err)
 	}
 
