@@ -2,11 +2,13 @@ package packet
 
 import "log"
 
-type payload struct {
+type Payload struct {
 	rawBytes       []byte
 	bytesRemaining int
 	received       bool
 }
+
+func (p *Payload) Complete() bool { return p.received }
 
 // The BLE protocol limits packet size to 20 bytes per packet.
 // To accommodate, GoPro cameras use start and continuation packets
@@ -16,7 +18,8 @@ type payload struct {
 // a start packet header and subsequent packets containing continuation packet headers.
 // https://gopro.github.io/OpenGoPro/ble/protocol/data_protocol.html#packetization
 // https://gopro.github.io/OpenGoPro/tutorials/parse-ble-responses#accumulating-the-response
-func (p *payload) accumulate(buf []byte) {
+func NewPayload(buf []byte) *Payload {
+	p := new(Payload)
 	if buf[0] == CONTINUATION_MASK.Byte() {
 		log.Println("continuation packet received")
 		// pop the first byte
@@ -46,4 +49,5 @@ func (p *payload) accumulate(buf []byte) {
 	p.rawBytes = append(p.rawBytes, buf...)
 	p.bytesRemaining -= len(buf)
 	log.Printf("bytes-remaining: %d\n", p.bytesRemaining)
+	return p
 }

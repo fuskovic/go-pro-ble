@@ -8,6 +8,7 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/fuskovic/go-pro-ble/internal/packet"
 	"tinygo.org/x/bluetooth"
 )
 
@@ -27,14 +28,14 @@ type Adapter interface {
 	Write(Characteristic, []byte) (int, error)
 	Read(Characteristic, []byte) (int, error)
 	ReadString(Characteristic) (string, error)
-	HandleNotifications(func(Characteristic, []byte) error) error
+	HandleNotifications(func(Notification) error) error
 	Close() error
 }
 
 type adapter struct {
-	notifications   chan *notification
-	device          *bluetooth.Device
-	characteristics map[Characteristic]*bluetooth.DeviceCharacteristic
+	rawNotifications chan *rawNotification
+	device           *bluetooth.Device
+	characteristics  map[Characteristic]*bluetooth.DeviceCharacteristic
 }
 
 // NewAdapter initializes a new bluetooth interface for reading and writing to various
@@ -69,9 +70,9 @@ func NewAdapter() (Adapter, error) {
 	log.Printf("connected to %s[%s]\n", scanResult.LocalName(), scanResult.Address.String())
 
 	a := &adapter{
-		notifications:   make(chan *notification),
-		characteristics: make(map[Characteristic]*bluetooth.DeviceCharacteristic),
-		device:          &d,
+		rawNotifications: make(chan *rawNotification),
+		characteristics:  make(map[Characteristic]*bluetooth.DeviceCharacteristic),
+		device:           &d,
 	}
 
 	log.Println("discovering services + characteristics")
@@ -120,8 +121,8 @@ func NewAdapter() (Adapter, error) {
 
 			if c.notifiable {
 				notificationHandler := func(buf []byte) {
-					a.notifications <- &notification{
-						Buffer:         bytes.NewBuffer(buf),
+					a.rawNotifications <- &rawNotification{
+						buf:            bytes.NewBuffer(buf),
 						characteristic: c,
 					}
 				}
@@ -166,23 +167,27 @@ func (a *adapter) ReadString(c Characteristic) (string, error) {
 	return string(b[:n]), nil
 }
 
-type Notification interface {
-	CommandID() COMMAND_ID
-	Status() 	TLV_RESPONSE_STATUS
-	Payload() 	[]byte
+// converts a raw notification into a read-only human-readable notification.
+func newNotification(rn *rawNotification) Notification {
+	b := rn.buf.Bytes()
+	return &humanReadableNotification{
+		cmdID:   COMMAND_ID(b[0]),
+		status:  TLV_RESPONSE_STATUS(b[1]),
+		payload: packet.NewPayload(b),
+	}
 }
 
-type notification struct {
-	*bytes.Buffer
-	characteristic Characteristic
-}
-
-func (a *adapter) HandleNotifications(handler func(c Characteristic, b []byte) error) error {
+func (a *adapter) HandleNotifications(handler func(Notification) error) error {
 	log.Println("listening for notifications")
-	for n := range a.notifications {
-		log.Printf("received notification from %s\n", n.characteristic.name)
-		if err := handler(n.characteristic, n.Bytes()); err != nil {
-			return fmt.Errorf("failed to handle notification for %s characteristic: %v", n.characteristic.name, err)
+	for rn := range a.rawNotifications {
+		log.Printf("received raw notification from %s\n", rn.characteristic.name)
+		log.Printf("raw payload: %s\n", rn.buf.Bytes())
+		hrn := newNotification(rn)
+		log.Printf("converted to human readable notification: %+v\n", hrn)
+		if hrn.Payload().Complete() {
+			if err := handler(hrn); err != nil {
+				return fmt.Errorf("failed to handle notification for %s characteristic: %v", rn.characteristic.name, err)
+			}
 		}
 	}
 	log.Println("done handling notifications")
