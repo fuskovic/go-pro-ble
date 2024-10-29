@@ -22,7 +22,7 @@ func main() {
 			// Second byte is the command ID. Third byte is the status.
 			// https://gopro.github.io/OpenGoPro/tutorials/parse-ble-responses#responses-with-payload
 			cmdID, status := b[1], b[2]
-			if cmdID == ble.WifiApToggleCmdID {
+			if cmdID == ble.WIFI_AP_TOGGLE_COMMAND_ID.Byte() {
 				log.Println("received response from wifi-access-point-toggle")
 				if status == byte(ble.TLV_RESPONSE_SUCCESS) {
 					log.Println("successfully enabled wifi-access-point")

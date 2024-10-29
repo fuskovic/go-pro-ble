@@ -166,6 +166,12 @@ func (a *adapter) ReadString(c Characteristic) (string, error) {
 	return string(b[:n]), nil
 }
 
+type Notification interface {
+	CommandID() COMMAND_ID
+	Status() 	TLV_RESPONSE_STATUS
+	Payload() 	[]byte
+}
+
 type notification struct {
 	*bytes.Buffer
 	characteristic Characteristic
