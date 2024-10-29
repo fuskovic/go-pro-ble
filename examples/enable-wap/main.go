@@ -4,7 +4,7 @@ import (
 	"log"
 	"sync"
 
-	"github.com/fuskovic/go-pro-ble"
+	ble "github.com/fuskovic/go-pro-ble"
 )
 
 func main() {
@@ -16,19 +16,14 @@ func main() {
 
 	var wg sync.WaitGroup
 	wg.Add(1)
-	go adapter.HandleNotifications(func(c ble.Characteristic, b []byte) error {
-		if len(b) >= 3 {
-			defer wg.Done()
-			// Second byte is the command ID. Third byte is the status.
-			// https://gopro.github.io/OpenGoPro/tutorials/parse-ble-responses#responses-with-payload
-			cmdID, status := b[1], b[2]
-			if cmdID == ble.WIFI_AP_TOGGLE_COMMAND_ID.Byte() {
-				log.Println("received response from wifi-access-point-toggle")
-				if status == byte(ble.TLV_RESPONSE_SUCCESS) {
-					log.Println("successfully enabled wifi-access-point")
-				} else {
-					log.Println("failed to enable wifi-access-point")
-				}
+	go adapter.HandleNotifications(func(n ble.Notification) error {
+		defer wg.Done()
+		if n.CommandID() == ble.WIFI_AP_TOGGLE_COMMAND_ID {
+			log.Println("received response from wifi-access-point-toggle")
+			if n.Status() == ble.TLV_RESPONSE_SUCCESS {
+				log.Println("successfully enabled wifi-access-point")
+			} else {
+				log.Println("failed to enable wifi-access-point")
 			}
 		}
 		return nil
