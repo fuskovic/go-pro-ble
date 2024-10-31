@@ -23,6 +23,5 @@ func (n humanReadableNotification) Status() TLV_RESPONSE_STATUS { return n.statu
 func (n humanReadableNotification) Payload() *packet.Payload    { return n.payload }
 
 type rawNotification struct {
-	buf            *bytes.Buffer
-	characteristic Characteristic
+	buf *bytes.Buffer
 }

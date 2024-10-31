@@ -7,6 +7,7 @@ import (
 	"log"
 	"slices"
 	"strings"
+	"time"
 
 	"github.com/fuskovic/go-pro-ble/internal/packet"
 	"tinygo.org/x/bluetooth"
@@ -122,8 +123,7 @@ func NewAdapter() (Adapter, error) {
 			if c.notifiable {
 				notificationHandler := func(buf []byte) {
 					a.rawNotifications <- &rawNotification{
-						buf:            bytes.NewBuffer(buf),
-						characteristic: c,
+						buf: bytes.NewBuffer(buf),
 					}
 				}
 				if err := char.EnableNotifications(notificationHandler); err != nil {
@@ -167,31 +167,40 @@ func (a *adapter) ReadString(c Characteristic) (string, error) {
 	return string(b[:n]), nil
 }
 
-// converts a raw notification into a read-only human-readable notification.
-func newNotification(rn *rawNotification) Notification {
-	b := rn.buf.Bytes()
-	return &humanReadableNotification{
-		cmdID:   COMMAND_ID(b[0]),
-		status:  TLV_RESPONSE_STATUS(b[1]),
-		payload: packet.NewPayload(b),
-	}
-}
-
 func (a *adapter) HandleNotifications(handler func(Notification) error) error {
 	log.Println("listening for notifications")
-	for rn := range a.rawNotifications {
-		log.Printf("received raw notification from %s\n", rn.characteristic.name)
-		log.Printf("raw payload: %s\n", rn.buf.Bytes())
-		hrn := newNotification(rn)
-		log.Printf("converted to human readable notification: %+v\n", hrn)
-		if hrn.Payload().Complete() {
-			if err := handler(hrn); err != nil {
-				return fmt.Errorf("failed to handle notification for %s characteristic: %v", rn.characteristic.name, err)
+	timer := time.NewTimer(time.Second)
+
+	var n *humanReadableNotification
+	for {
+		select {
+		case <-timer.C:
+			if err := handler(n); err != nil {
+				return err
 			}
+			log.Println("done handling notifications")
+			return nil
+		case rn := <-a.rawNotifications:
+			log.Println("received notification")
+			if n == nil {
+				b := rn.buf.Bytes()
+				n = &humanReadableNotification{
+					payload: new(packet.Payload),
+					// get hardware info
+					cmdID:  COMMAND_ID(b[2]),
+					status: TLV_RESPONSE_STATUS(b[3]),
+
+					// enable wap
+					// cmdID:   COMMAND_ID(b[0]),
+					// status:  TLV_RESPONSE_STATUS(b[1]),
+
+					// TODO: Figure out why the command id and status are
+					// in different positions for these two
+				}
+			}
+			n.payload.Accumulate(rn.buf.Bytes())
 		}
 	}
-	log.Println("done handling notifications")
-	return nil
 }
 
 func (a *adapter) Close() error {

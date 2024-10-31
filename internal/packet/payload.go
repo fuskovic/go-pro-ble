@@ -1,14 +1,10 @@
 package packet
 
-import "log"
-
 type Payload struct {
-	rawBytes       []byte
-	bytesRemaining int
-	received       bool
+	rawBytes []byte
 }
 
-func (p *Payload) Complete() bool { return p.received }
+func (p *Payload) Bytes() []byte { return p.rawBytes }
 
 // The BLE protocol limits packet size to 20 bytes per packet.
 // To accommodate, GoPro cameras use start and continuation packets
@@ -18,36 +14,25 @@ func (p *Payload) Complete() bool { return p.received }
 // a start packet header and subsequent packets containing continuation packet headers.
 // https://gopro.github.io/OpenGoPro/ble/protocol/data_protocol.html#packetization
 // https://gopro.github.io/OpenGoPro/tutorials/parse-ble-responses#accumulating-the-response
-func NewPayload(buf []byte) *Payload {
-	p := new(Payload)
+func (p *Payload) Accumulate(buf []byte) {
 	if buf[0] == CONTINUATION_MASK.Byte() {
-		log.Println("continuation packet received")
 		// pop the first byte
 		buf = buf[1:]
 	} else {
-		// This is a new packet so start with an empty byte array
-		p.rawBytes = []byte{}
+		// 	<< is used for "times 2" and >> is for "divided by 2" - and the number after it is how many times.
+		// So n << x is "n times 2, x times". And y >> z is "y divided by 2, z times".
+		// For example, 1 << 5 is "1 times 2, 5 times" or 32. And 32 >> 5 is "32 divided by 2, 5 times" or 1.
 		header := ((buf[0] & HEADER_MASK.Byte()) >> 5)
 		switch header {
 		case GENERAL.Byte():
-			log.Println("general packet received")
-			p.bytesRemaining = int(buf[0] & GENERAL_LEN_MASK.Byte())
 			buf = buf[1:]
 		case EXT_13.Byte():
-			log.Println("extended 13-bit packet received")
-			p.bytesRemaining = int(((buf[0] & EXTENDED_13_BIT_MASK.Byte()) << 8) + buf[1])
 			buf = buf[2:]
 		case EXT_16.Byte():
-			log.Println("extended 16-bit packet received")
-			p.bytesRemaining = int((buf[1] << 8) + buf[2])
 			buf = buf[3:]
 		}
 	}
 
 	// # Append payload to buffer and update remaining / complete
-	log.Printf("appending %d bytes", len(buf))
 	p.rawBytes = append(p.rawBytes, buf...)
-	p.bytesRemaining -= len(buf)
-	log.Printf("bytes-remaining: %d\n", p.bytesRemaining)
-	return p
 }
