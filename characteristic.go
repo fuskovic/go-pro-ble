@@ -1,5 +1,7 @@
 package ble
 
+import "strings"
+
 // The following code is based on the bluetooth-low-energy spec defined at:
 // https://gopro.github.io/OpenGoPro/ble/protocol/ble_setup.html#ble-characteristics
 
@@ -33,6 +35,14 @@ var Characterstics = []Characteristic{
 	NetworkMgmtReq,
 	NetworkMgmtResp,
 	ModelCode,
+}
+
+// https://gopro.github.io/OpenGoPro/ble/protocol/ble_setup.html#ble-characteristics
+var baseFormat = "b5f9XXXX-aa8d-11e3-9046-0002a5d5c51b"
+
+// format takes the base format('b5f9XXXX-aa8d-11e3-9046-0002a5d5c51b') and replaces 'XXXX' with s.
+func format(s string) string {
+	return strings.Replace(baseFormat, "XXXX", s, 1)
 }
 
 // wifi-access-point

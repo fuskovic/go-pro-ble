@@ -1,27 +1,18 @@
 package ble
 
-import (
-	"bytes"
-
-	"github.com/fuskovic/go-pro-ble/internal/packet"
-)
-
+// Notification represents the final accumulated response for a given command.
 type Notification interface {
 	CommandID() COMMAND_ID
 	Status() TLV_RESPONSE_STATUS
-	Payload() *packet.Payload
+	Payload() []byte
 }
 
-type humanReadableNotification struct {
+type notification struct {
 	cmdID   COMMAND_ID
 	status  TLV_RESPONSE_STATUS
-	payload *packet.Payload
+	payload *payload
 }
 
-func (n humanReadableNotification) CommandID() COMMAND_ID       { return n.cmdID }
-func (n humanReadableNotification) Status() TLV_RESPONSE_STATUS { return n.status }
-func (n humanReadableNotification) Payload() *packet.Payload    { return n.payload }
-
-type rawNotification struct {
-	buf *bytes.Buffer
-}
+func (n notification) CommandID() COMMAND_ID       { return n.cmdID }
+func (n notification) Status() TLV_RESPONSE_STATUS { return n.status }
+func (n notification) Payload() []byte             { return n.payload.bytes }

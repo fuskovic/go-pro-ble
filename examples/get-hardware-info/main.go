@@ -21,7 +21,7 @@ func main() {
 		log.Println("reached handle notifications")
 		log.Printf("command-id: %v\n", n.CommandID().Byte())
 		log.Printf("status: %s\n", n.Status())
-		log.Printf("payload: %s\n", n.Payload().Bytes())
+		log.Printf("payload: %s\n", n.Payload())
 		return nil
 	})
 

@@ -1,4 +1,4 @@
-package packet
+package ble
 
 import "log"
 
@@ -27,18 +27,12 @@ const (
 	ext16 = 0b10
 )
 
-type Payload struct {
-	rawBytes []byte
-	offset   int
+type payload struct {
+	bytes []byte
+	// offset should be used to to distinguish where
+	// the payload starts. Which should be after the command id and status.
+	offset int
 }
-
-// Offset should be used by the caller to distinguish between where
-// the payload starts. Which should be after the command id and status.
-func (p *Payload) Offset() int { return p.offset }
-
-// Bytes should only be called after all the necessary bluetooth packets
-// have been accumulated.
-func (p *Payload) Bytes() []byte { return p.rawBytes }
 
 // The BLE protocol limits packet size to 20 bytes per packet.
 // To accommodate, GoPro cameras use start and continuation packets
@@ -47,7 +41,7 @@ func (p *Payload) Bytes() []byte { return p.rawBytes }
 // must be split into multiple packets with the first packet containing
 // a start packet header and subsequent packets containing continuation packet headers.
 // https://gopro.github.io/OpenGoPro/tutorials/parse-ble-responses#accumulating-the-response
-func (p *Payload) Accumulate(buf []byte) {
+func (p *payload) Accumulate(buf []byte) {
 	if buf[0] == continuationMask {
 		// pop the first byte
 		log.Println("received continuation packet")
@@ -72,5 +66,5 @@ func (p *Payload) Accumulate(buf []byte) {
 		}
 	}
 	// append payload to buffer and update remaining / complete
-	p.rawBytes = append(p.rawBytes, buf...)
+	p.bytes = append(p.bytes, buf...)
 }

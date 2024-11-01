@@ -1,7 +1,6 @@
 package ble
 
 import (
-	"bytes"
 	"errors"
 	"fmt"
 	"log"
@@ -9,7 +8,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/fuskovic/go-pro-ble/internal/packet"
 	"tinygo.org/x/bluetooth"
 )
 
@@ -34,9 +32,9 @@ type Adapter interface {
 }
 
 type adapter struct {
-	rawNotifications chan *rawNotification
-	device           *bluetooth.Device
-	characteristics  map[Characteristic]*bluetooth.DeviceCharacteristic
+	pkts            chan []byte
+	device          *bluetooth.Device
+	characteristics map[Characteristic]*bluetooth.DeviceCharacteristic
 }
 
 // NewAdapter initializes a new bluetooth interface for reading and writing to various
@@ -71,9 +69,9 @@ func NewAdapter() (Adapter, error) {
 	log.Printf("connected to %s[%s]\n", scanResult.LocalName(), scanResult.Address.String())
 
 	a := &adapter{
-		rawNotifications: make(chan *rawNotification),
-		characteristics:  make(map[Characteristic]*bluetooth.DeviceCharacteristic),
-		device:           &d,
+		pkts:            make(chan []byte),
+		characteristics: make(map[Characteristic]*bluetooth.DeviceCharacteristic),
+		device:          &d,
 	}
 
 	log.Println("discovering services + characteristics")
@@ -121,12 +119,7 @@ func NewAdapter() (Adapter, error) {
 			log.Println("    notifiable=", c.notifiable)
 
 			if c.notifiable {
-				notificationHandler := func(buf []byte) {
-					a.rawNotifications <- &rawNotification{
-						buf: bytes.NewBuffer(buf),
-					}
-				}
-				if err := char.EnableNotifications(notificationHandler); err != nil {
+				if err := char.EnableNotifications(func(b []byte) { a.pkts <- b }); err != nil {
 					log.Printf("failed to handle notification for %s characteristic: %v\n", c.name, err)
 				}
 			}
@@ -169,26 +162,22 @@ func (a *adapter) ReadString(c Characteristic) (string, error) {
 
 func (a *adapter) HandleNotifications(handler func(Notification) error) error {
 	var (
-		timer        = time.NewTimer(time.Second)
-		firstPkt     []byte
-		notification *humanReadableNotification
+		timer    = time.NewTimer(time.Second)
+		firstPkt []byte
+		n        *notification
 	)
 	for {
 		select {
 		case <-timer.C:
-			offset := notification.payload.Offset()
-			notification.cmdID = COMMAND_ID(firstPkt[0+offset])
-			notification.status = TLV_RESPONSE_STATUS(firstPkt[1+offset])
-			return handler(notification)
-		case rn := <-a.rawNotifications:
-			b := rn.buf.Bytes()
-			if notification == nil {
-				firstPkt = b
-				notification = &humanReadableNotification{
-					payload: new(packet.Payload),
-				}
+			n.cmdID = COMMAND_ID(firstPkt[0+n.payload.offset])
+			n.status = TLV_RESPONSE_STATUS(firstPkt[1+n.payload.offset])
+			return handler(n)
+		case pkt := <-a.pkts:
+			if n == nil {
+				firstPkt = pkt
+				n = &notification{payload: new(payload)}
 			}
-			notification.payload.Accumulate(b)
+			n.payload.Accumulate(pkt)
 		}
 	}
 }
