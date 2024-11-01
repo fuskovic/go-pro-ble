@@ -168,37 +168,27 @@ func (a *adapter) ReadString(c Characteristic) (string, error) {
 }
 
 func (a *adapter) HandleNotifications(handler func(Notification) error) error {
-	log.Println("listening for notifications")
-	timer := time.NewTimer(time.Second)
-
-	var n *humanReadableNotification
+	var (
+		timer        = time.NewTimer(time.Second)
+		firstPkt     []byte
+		notification *humanReadableNotification
+	)
 	for {
 		select {
 		case <-timer.C:
-			if err := handler(n); err != nil {
-				return err
-			}
-			log.Println("done handling notifications")
-			return nil
+			offset := notification.payload.Offset()
+			notification.cmdID = COMMAND_ID(firstPkt[0+offset])
+			notification.status = TLV_RESPONSE_STATUS(firstPkt[1+offset])
+			return handler(notification)
 		case rn := <-a.rawNotifications:
-			log.Println("received notification")
-			if n == nil {
-				b := rn.buf.Bytes()
-				n = &humanReadableNotification{
+			b := rn.buf.Bytes()
+			if notification == nil {
+				firstPkt = b
+				notification = &humanReadableNotification{
 					payload: new(packet.Payload),
-					// get hardware info
-					cmdID:  COMMAND_ID(b[2]),
-					status: TLV_RESPONSE_STATUS(b[3]),
-
-					// enable wap
-					// cmdID:   COMMAND_ID(b[0]),
-					// status:  TLV_RESPONSE_STATUS(b[1]),
-
-					// TODO: Figure out why the command id and status are
-					// in different positions for these two
 				}
 			}
-			n.payload.Accumulate(rn.buf.Bytes())
+			notification.payload.Accumulate(b)
 		}
 	}
 }

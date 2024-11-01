@@ -1,10 +1,14 @@
 package packet
 
+import "log"
+
 type Payload struct {
 	rawBytes []byte
+	offset   int
 }
 
 func (p *Payload) Bytes() []byte { return p.rawBytes }
+func (p *Payload) Offset() int   { return p.offset }
 
 // The BLE protocol limits packet size to 20 bytes per packet.
 // To accommodate, GoPro cameras use start and continuation packets
@@ -17,6 +21,7 @@ func (p *Payload) Bytes() []byte { return p.rawBytes }
 func (p *Payload) Accumulate(buf []byte) {
 	if buf[0] == CONTINUATION_MASK.Byte() {
 		// pop the first byte
+		log.Println("received continuation packet")
 		buf = buf[1:]
 	} else {
 		// 	<< is used for "times 2" and >> is for "divided by 2" - and the number after it is how many times.
@@ -25,10 +30,15 @@ func (p *Payload) Accumulate(buf []byte) {
 		header := ((buf[0] & HEADER_MASK.Byte()) >> 5)
 		switch header {
 		case GENERAL.Byte():
+			log.Println("received general packet")
 			buf = buf[1:]
 		case EXT_13.Byte():
+			p.offset = 2
+			log.Println("received extended-13 packet")
 			buf = buf[2:]
 		case EXT_16.Byte():
+			p.offset = 2
+			log.Println("received extended-16 packet")
 			buf = buf[3:]
 		}
 	}
