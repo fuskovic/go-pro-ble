@@ -18,13 +18,9 @@ func main() {
 	wg.Add(1)
 	go adapter.HandleNotifications(func(n ble.Notification) error {
 		defer wg.Done()
-		if n.CommandID() == ble.WIFI_AP_TOGGLE_COMMAND_ID {
-			log.Println("received response from wifi-access-point-toggle")
-			if n.Status() == ble.TLV_RESPONSE_SUCCESS {
-				log.Println("successfully enabled wifi-access-point")
-			} else {
-				log.Println("failed to enable wifi-access-point")
-			}
+		if n.CommandID() == ble.WIFI_AP_TOGGLE_COMMAND_ID && n.Status() == ble.TLV_RESPONSE_SUCCESS {
+			log.Println("successfully enabled wifi-access-point")
+			return nil
 		}
 		return nil
 	})
