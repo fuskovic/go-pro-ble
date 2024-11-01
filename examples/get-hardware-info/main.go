@@ -8,7 +8,7 @@ import (
 )
 
 func main() {
-	adapter, err := ble.NewAdapter()
+	adapter, err := ble.NewAdapter(&ble.AdapterConfig{Debug: true})
 	if err != nil {
 		log.Fatalf("failed to init ble adapter: %v\n", err)
 	}
@@ -18,19 +18,16 @@ func main() {
 	wg.Add(1)
 	go adapter.HandleNotifications(func(n ble.Notification) error {
 		defer wg.Done()
-		log.Println("reached handle notifications")
-		log.Printf("command-id: %v\n", n.CommandID().Byte())
-		log.Printf("status: %s\n", n.Status())
-		log.Printf("payload: %s\n", n.Payload())
+		if n.CommandID() == ble.GET_HARDWARE_INFO_COMMAND_ID && n.Status() == ble.TLV_RESPONSE_SUCCESS {
+			log.Println(n.Payload())
+		}
 		return nil
 	})
 
 	log.Println("sending get-hardware-info-request")
-	n, err := adapter.Write(ble.CmdRequest, ble.GET_HARDWARE_INFO)
-	if err != nil {
+	if _, err := adapter.Write(ble.CmdRequest, ble.GET_HARDWARE_INFO); err != nil {
 		log.Fatalf("failed to send get hardware info request: %v\n", err)
 	}
-	log.Printf("wrote %d bytes\n", n)
 	wg.Wait()
 	log.Println("done")
 }

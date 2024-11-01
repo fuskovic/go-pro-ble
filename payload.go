@@ -1,6 +1,6 @@
 package ble
 
-import "log"
+import "log/slog"
 
 const (
 	// We use HEADER_MASK to distinguish the header bytes from the payload.
@@ -32,6 +32,7 @@ type payload struct {
 	// offset should be used to to distinguish where
 	// the payload starts. Which should be after the command id and status.
 	offset int
+	log    *slog.Logger
 }
 
 // The BLE protocol limits packet size to 20 bytes per packet.
@@ -44,7 +45,7 @@ type payload struct {
 func (p *payload) Accumulate(buf []byte) {
 	if buf[0] == continuationMask {
 		// pop the first byte
-		log.Println("received continuation packet")
+		p.log.Debug("received continuation packet")
 		buf = buf[1:]
 	} else {
 		// 	<< is used for "times 2" and >> is for "divided by 2" - and the number after it is how many times.
@@ -53,18 +54,22 @@ func (p *payload) Accumulate(buf []byte) {
 		header := ((buf[0] & headerMask) >> 5)
 		switch header {
 		case general:
-			log.Println("received general packet")
+			p.log.Debug("received general packet")
 			buf = buf[1:]
 		case ext13:
 			p.offset = 2
-			log.Println("received extended-13 packet")
+			p.log.Debug("received extended-13 packet")
 			buf = buf[2:]
 		case ext16:
 			p.offset = 2
-			log.Println("received extended-16 packet")
+			p.log.Debug("received extended-16 packet")
 			buf = buf[3:]
 		}
 	}
 	// append payload to buffer and update remaining / complete
+	p.log.Debug("appending packet to response",
+		"packet-length", len(buf),
+		"total", len(p.bytes),
+	)
 	p.bytes = append(p.bytes, buf...)
 }

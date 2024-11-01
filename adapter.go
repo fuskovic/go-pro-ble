@@ -4,6 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"log/slog"
+	"os"
 	"slices"
 	"strings"
 	"time"
@@ -35,22 +37,34 @@ type adapter struct {
 	pkts            chan []byte
 	device          *bluetooth.Device
 	characteristics map[Characteristic]*bluetooth.DeviceCharacteristic
+	log             *slog.Logger
+}
+
+type AdapterConfig struct {
+	// Toggle debug logging.
+	Debug bool
 }
 
 // NewAdapter initializes a new bluetooth interface for reading and writing to various
 // ble service characteristics as well as listening for notifications.
-func NewAdapter() (Adapter, error) {
+func NewAdapter(config *AdapterConfig) (Adapter, error) {
+	a := &adapter{
+		pkts:            make(chan []byte),
+		characteristics: make(map[Characteristic]*bluetooth.DeviceCharacteristic),
+		log:             newLogger(config.Debug),
+	}
+
 	tinyGoAdapter := bluetooth.DefaultAdapter
 	if err := tinyGoAdapter.Enable(); err != nil {
 		return nil, fmt.Errorf("failed to enable BLE stack: %v", err)
 	}
-	log.Println("BLE stack successfully enabled")
+	a.log.Info("BLE stack successfully enabled")
 
 	ch := make(chan bluetooth.ScanResult, 1)
-	log.Println("scanning for devices...")
+	a.log.Info("scanning for devices...")
 	err := tinyGoAdapter.Scan(func(adapter *bluetooth.Adapter, result bluetooth.ScanResult) {
 		if strings.Contains(result.LocalName(), "GoPro") {
-			log.Printf("found %s\n", result.LocalName())
+			a.log.Debug("target device found", "name", result.LocalName())
 			adapter.StopScan()
 			ch <- result
 		}
@@ -66,15 +80,13 @@ func NewAdapter() (Adapter, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to %s", scanResult.LocalName())
 	}
-	log.Printf("connected to %s[%s]\n", scanResult.LocalName(), scanResult.Address.String())
+	a.log.Info("connected",
+		"local-name", scanResult.LocalName(),
+		"address", scanResult.Address.String(),
+	)
+	a.device = &d
 
-	a := &adapter{
-		pkts:            make(chan []byte),
-		characteristics: make(map[Characteristic]*bluetooth.DeviceCharacteristic),
-		device:          &d,
-	}
-
-	log.Println("discovering services + characteristics")
+	a.log.Debug("discovering services + characteristics")
 	srvcs, err := a.device.DiscoverServices(nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to descover services: %s", err)
@@ -94,7 +106,7 @@ func NewAdapter() (Adapter, error) {
 
 		chars, err := srvc.DiscoverCharacteristics(nil)
 		if err != nil {
-			log.Printf("failed to discover service characteristics: %v\n", err)
+			a.log.Error("failed to discover service characteristics", "error", err)
 			continue
 		}
 
@@ -112,15 +124,21 @@ func NewAdapter() (Adapter, error) {
 			}
 
 			a.characteristics[c] = &char
-			log.Println("- service", s.Name())
-			log.Printf("-- characteristic #%d: %s[%s]\n", i+1, c.name, uuid)
-			log.Println("    readable=", c.readable)
-			log.Println("    writable=", c.writeable)
-			log.Println("    notifiable=", c.notifiable)
+			a.log.Debug("discovered",
+				"service", s.Name(),
+				"characteristic-number", i+1,
+				"characteristic", c.name,
+				"readable", c.readable,
+				"writable", c.writeable,
+				"notifiable", c.notifiable,
+			)
 
 			if c.notifiable {
 				if err := char.EnableNotifications(func(b []byte) { a.pkts <- b }); err != nil {
-					log.Printf("failed to handle notification for %s characteristic: %v\n", c.name, err)
+					a.log.Error("failed to handle notification",
+						"characteristic-name", c.name,
+						"error", err,
+					)
 				}
 			}
 		}
@@ -184,4 +202,16 @@ func (a *adapter) HandleNotifications(handler func(Notification) error) error {
 
 func (a *adapter) Close() error {
 	return a.device.Disconnect()
+}
+
+func newLogger(debug bool) *slog.Logger {
+	logLvl := slog.LevelInfo
+	if debug {
+		logLvl = slog.LevelDebug
+	}
+	return slog.New(slog.NewTextHandler(os.Stdout,
+		&slog.HandlerOptions{
+			Level: logLvl,
+		},
+	))
 }

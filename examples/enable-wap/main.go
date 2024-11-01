@@ -8,7 +8,7 @@ import (
 )
 
 func main() {
-	adapter, err := ble.NewAdapter()
+	adapter, err := ble.NewAdapter(&ble.AdapterConfig{Debug: true})
 	if err != nil {
 		log.Fatalf("failed to init ble adapter: %v\n", err)
 	}
