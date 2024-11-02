@@ -8,7 +8,6 @@ import (
 	"os"
 	"slices"
 	"strings"
-	"time"
 
 	"tinygo.org/x/bluetooth"
 )
@@ -179,25 +178,23 @@ func (a *adapter) ReadString(c Characteristic) (string, error) {
 }
 
 func (a *adapter) HandleNotifications(handler func(Notification) error) error {
-	var (
-		timer    = time.NewTimer(time.Second)
-		firstPkt []byte
-		n        *notification
-	)
-	for {
-		select {
-		case <-timer.C:
+	var firstPkt []byte
+	var n *notification
+
+	for pkt := range a.pkts {
+		if n == nil {
+			firstPkt = pkt
+			n = &notification{payload: new(payload)}
+			n.payload.log = a.log
+		}
+		n.payload.Accumulate(pkt)
+		if n.payload.complete {
 			n.cmdID = COMMAND_ID(firstPkt[0+n.payload.offset])
 			n.status = TLV_RESPONSE_STATUS(firstPkt[1+n.payload.offset])
-			return handler(n)
-		case pkt := <-a.pkts:
-			if n == nil {
-				firstPkt = pkt
-				n = &notification{payload: new(payload)}
-			}
-			n.payload.Accumulate(pkt)
+			break
 		}
 	}
+	return handler(n)
 }
 
 func (a *adapter) Close() error {

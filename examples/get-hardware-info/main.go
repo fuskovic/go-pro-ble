@@ -19,7 +19,7 @@ func main() {
 	go adapter.HandleNotifications(func(n ble.Notification) error {
 		defer wg.Done()
 		if n.CommandID() == ble.GET_HARDWARE_INFO_COMMAND_ID && n.Status() == ble.TLV_RESPONSE_SUCCESS {
-			log.Println(n.Payload())
+			log.Printf("%s", n.Payload())
 		}
 		return nil
 	})
