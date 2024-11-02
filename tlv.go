@@ -1,6 +1,12 @@
 package ble
 
-import "log"
+import (
+	"fmt"
+	"log"
+
+	pb "github.com/fuskovic/ble/protos"
+	"google.golang.org/protobuf/proto"
+)
 
 type TLV_RESPONSE_STATUS byte
 
@@ -33,17 +39,39 @@ type TlvResponse struct {
 	Payload   []byte
 }
 
-func decodeTlvResponse(b []byte) {
-	// # First byte is the length of this response.
-	// # Second byte is the ID
-	// # Third byte is the status
-	// # The remainder is the payload
-	// payload = data[3 : length + 1]
-	// var payload []byte
+type operation int
 
-	// length, cmdId, status := int(b[0]), b[1], b[2]
-	// if len(b) > 3 {
-	// 	payload = b[3 : length+1]
+const (
+	operationRequest operation = iota
+	operationResponse
+	operationNotification
+)
 
+func decodeTlvResponse(b []byte) error {
+	for _, pb := range pb.IDs {
+		if b[0] == pb.FeatureID() && b[1] == pb.FeatureID() {
+			x := pb.DataStructure()
+			if err := proto.Unmarshal(b, x); err != nil {
+				return fmt.Errorf("failed to unmarshal data structure: %s\n", err)
+			}
+			// 		TODO:
+			// 		P is a Protobuf Message
+			// 		Match Feature ID P[0] and Action ID P[1] to a Protobuf message in the Protobuf IDs table
+			// 		Use matched Protobuf message to parse byte payload into useful data structure
+			// 		Exit
+		}
+	}
+	// TODO:
+	// Handle non-pb payload.
+	//
+	// Nope. It is a TLV response
+	// if U == GP-0072 (Command) {
+	// 	Parse message payload using Command Table with Command scheme
+	// }
+	// else if U == GP-0074 (Settings) {
+	// 	Parse using Setting ID mapping with Command scheme
+	// }
+	// else if U == GP-0076 (Query) {
+	// 	Parse message payload using Query Table with Query scheme
 	// }
 }
