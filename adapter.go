@@ -32,8 +32,13 @@ type Adapter interface {
 	Close() error
 }
 
+type packet struct {
+	data               []byte
+	characteristicUuid string
+}
+
 type adapter struct {
-	pkts            chan []byte
+	pkts            chan *packet
 	device          *bluetooth.Device
 	characteristics map[Characteristic]*bluetooth.DeviceCharacteristic
 	log             *slog.Logger
@@ -48,20 +53,19 @@ type AdapterConfig struct {
 // ble service characteristics as well as listening for notifications.
 func NewAdapter(config *AdapterConfig) (Adapter, error) {
 	a := &adapter{
-		pkts:            make(chan []byte),
+		pkts:            make(chan *packet),
 		characteristics: make(map[Characteristic]*bluetooth.DeviceCharacteristic),
 		log:             newLogger(config.Debug),
 	}
 
-	tinyGoAdapter := bluetooth.DefaultAdapter
-	if err := tinyGoAdapter.Enable(); err != nil {
+	if err := bluetooth.DefaultAdapter.Enable(); err != nil {
 		return nil, fmt.Errorf("failed to enable BLE stack: %v", err)
 	}
 	a.log.Info("BLE stack successfully enabled")
 
 	ch := make(chan bluetooth.ScanResult, 1)
 	a.log.Info("scanning for devices...")
-	err := tinyGoAdapter.Scan(func(adapter *bluetooth.Adapter, result bluetooth.ScanResult) {
+	err := bluetooth.DefaultAdapter.Scan(func(adapter *bluetooth.Adapter, result bluetooth.ScanResult) {
 		if strings.Contains(result.LocalName(), "GoPro") {
 			a.log.Debug("target device found", "name", result.LocalName())
 			adapter.StopScan()
@@ -75,7 +79,7 @@ func NewAdapter(config *AdapterConfig) (Adapter, error) {
 	// block until scan is complete
 	scanResult := <-ch
 
-	d, err := tinyGoAdapter.Connect(scanResult.Address, bluetooth.ConnectionParams{})
+	d, err := bluetooth.DefaultAdapter.Connect(scanResult.Address, bluetooth.ConnectionParams{})
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to %s", scanResult.LocalName())
 	}
@@ -133,7 +137,13 @@ func NewAdapter(config *AdapterConfig) (Adapter, error) {
 			)
 
 			if c.notifiable {
-				if err := char.EnableNotifications(func(b []byte) { a.pkts <- b }); err != nil {
+				notificationHandler := func(b []byte) {
+					a.pkts <- &packet{
+						data:               b,
+						characteristicUuid: c.uuid,
+					}
+				}
+				if err := char.EnableNotifications(notificationHandler); err != nil {
 					a.log.Error("failed to handle notification",
 						"characteristic-name", c.name,
 						"error", err,
@@ -183,11 +193,16 @@ func (a *adapter) HandleNotifications(handler func(Notification) error) error {
 
 	for pkt := range a.pkts {
 		if n == nil {
-			firstPkt = pkt
-			n = &notification{payload: new(payload)}
+			firstPkt = pkt.data
+			n = &notification{
+				payload: &payload{
+					characteristicUuid: pkt.characteristicUuid,
+					log:                a.log,
+				},
+			}
 			n.payload.log = a.log
 		}
-		n.payload.Accumulate(pkt)
+		n.payload.accumulate(pkt.data)
 		if n.payload.complete {
 			n.cmdID = COMMAND_ID(firstPkt[0+n.payload.offset])
 			n.status = TLV_RESPONSE_STATUS(firstPkt[1+n.payload.offset])

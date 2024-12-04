@@ -1,7 +1,11 @@
 package ble
 
 import (
+	"fmt"
 	"log/slog"
+
+	pb "github.com/fuskovic/ble/protos"
+	"google.golang.org/protobuf/proto"
 )
 
 const (
@@ -35,10 +39,33 @@ type payload struct {
 	bytes []byte
 	// offset should be used to to distinguish where
 	// the payload starts. Which should be after the command id and status.
-	offset         int
-	log            *slog.Logger
-	bytesRemaining int
-	complete       bool
+	offset             int
+	bytesRemaining     int
+	complete           bool
+	characteristicUuid string
+	log                *slog.Logger
+}
+
+func (p *payload) decode() error {
+	switch p.characteristicUuid {
+	case CmdRequest.uuid, CmdResponse.uuid:
+		// TODO
+	case QueryReq.uuid, QueryResp.uuid:
+		// TODO
+	case SettingsReq.uuid, SettingsResp.uuid:
+		// TODO
+	default:
+		// it's a protobuf message
+		for _, pb := range pb.IDs {
+			if p.bytes[0] == pb.FeatureID() && p.bytes[1] == pb.FeatureID() {
+				x := pb.DataStructure()
+				if err := proto.Unmarshal(p.bytes, x); err != nil {
+					return fmt.Errorf("failed to unmarshal data structure: %s", err)
+				}
+			}
+		}
+	}
+	return nil
 }
 
 // The BLE protocol limits packet size to 20 bytes per packet.
@@ -48,7 +75,7 @@ type payload struct {
 // must be split into multiple packets with the first packet containing
 // a start packet header and subsequent packets containing continuation packet headers.
 // https://gopro.github.io/OpenGoPro/tutorials/parse-ble-responses#accumulating-the-response
-func (p *payload) Accumulate(buf []byte) {
+func (p *payload) accumulate(buf []byte) {
 	if buf[0] == continuationMask {
 		// pop the first byte
 		p.log.Debug("received continuation packet")
@@ -58,7 +85,7 @@ func (p *payload) Accumulate(buf []byte) {
 		// However, we can't just use the length the whole packet because we only wan't the length of payload
 		// so we have to exclude command-id, status, and account for size differences.
 		//
-		// 	<< is used for "times 2" and >> is for "divided by 2" - and the number after it is how many times.
+		// << is used for "times 2" and >> is for "divided by 2" - and the number after it is how many times.
 		// So n << x is "n times 2, x times". And y >> z is "y divided by 2, z times".
 		// For example, 1 << 5 is "1 times 2, 5 times" or 32. And 32 >> 5 is "32 divided by 2, 5 times" or 1.
 		header := ((buf[0] & headerMask) >> 5)
