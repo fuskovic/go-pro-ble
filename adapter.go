@@ -186,7 +186,6 @@ func (a *adapter) HandleNotifications(handler func(Notification) error) error {
 					log:                a.log,
 				},
 			}
-			n.payload.log = a.log
 		}
 		n.payload.accumulate(pkt.data)
 		if n.payload.complete {
