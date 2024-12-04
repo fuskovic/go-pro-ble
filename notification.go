@@ -5,6 +5,8 @@ type Notification interface {
 	CommandID() COMMAND_ID
 	Status() TLV_RESPONSE_STATUS
 	Payload() []byte
+	// Match confirms if the notification came from the targetCmdID and status matches the targetStatus
+	Match(targetCmdID COMMAND_ID, targetStatus TLV_RESPONSE_STATUS) bool
 }
 
 type notification struct {
@@ -16,3 +18,6 @@ type notification struct {
 func (n notification) CommandID() COMMAND_ID       { return n.cmdID }
 func (n notification) Status() TLV_RESPONSE_STATUS { return n.status }
 func (n notification) Payload() []byte             { return n.payload.bytes }
+func (n notification) Match(targetCmdID COMMAND_ID, targetStatus TLV_RESPONSE_STATUS) bool {
+	return n.CommandID() == targetCmdID && n.Status() == targetStatus
+}

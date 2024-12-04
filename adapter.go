@@ -27,7 +27,7 @@ var (
 type Adapter interface {
 	Write(Characteristic, []byte) (int, error)
 	Read(Characteristic, []byte) (int, error)
-	ReadString(Characteristic) (string, error)
+	GetCharacteristicValue(Characteristic) (string, error)
 	HandleNotifications(func(Notification) error) error
 	Close() error
 }
@@ -177,7 +177,7 @@ func (a *adapter) Read(c Characteristic, b []byte) (int, error) {
 	return char.Read(b)
 }
 
-func (a *adapter) ReadString(c Characteristic) (string, error) {
+func (a *adapter) GetCharacteristicValue(c Characteristic) (string, error) {
 	b := make([]byte, 255)
 	n, err := a.Read(c, b)
 	if err != nil {
