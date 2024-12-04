@@ -6,7 +6,6 @@ import (
 	"log"
 	"log/slog"
 	"os"
-	"slices"
 	"strings"
 
 	"tinygo.org/x/bluetooth"
@@ -96,14 +95,8 @@ func NewAdapter(config *AdapterConfig) (Adapter, error) {
 	}
 
 	for _, srvc := range srvcs {
-		var s Service
-		if !slices.ContainsFunc(Services, func(svc Service) bool {
-			if svc.uuid == srvc.UUID().String() {
-				s = svc
-				return true
-			}
-			return false
-		}) {
+		s, ok := getService(srvc.UUID().String())
+		if !ok {
 			continue
 		}
 
@@ -114,15 +107,8 @@ func NewAdapter(config *AdapterConfig) (Adapter, error) {
 		}
 
 		for i, char := range chars {
-			uuid := char.UUID().String()
-			var c Characteristic
-			if !slices.ContainsFunc(Characterstics, func(characteristic Characteristic) bool {
-				if characteristic.uuid == uuid {
-					c = characteristic
-					return true
-				}
-				return false
-			}) {
+			c, ok := getCharacteristic(char.UUID().String())
+			if !ok {
 				continue
 			}
 
@@ -226,4 +212,22 @@ func newLogger(debug bool) *slog.Logger {
 			Level: logLvl,
 		},
 	))
+}
+
+func getCharacteristic(uuid string) (Characteristic, bool) {
+	for _, c := range Characterstics {
+		if c.uuid == uuid {
+			return c, true
+		}
+	}
+	return Characteristic{}, false
+}
+
+func getService(uuid string) (Service, bool) {
+	for _, s := range Services {
+		if s.uuid == uuid {
+			return s, true
+		}
+	}
+	return Service{}, false
 }
