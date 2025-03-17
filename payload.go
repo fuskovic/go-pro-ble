@@ -83,7 +83,7 @@ func (p *payload) accumulate(buf []byte) {
 	// append payload to buffer and update remaining / complete
 	p.bytes = append(p.bytes, buf...)
 	p.bytesRemaining -= len(buf)
-	if p.bytesRemaining == 0 {
+	if p.bytesRemaining <= 0 {
 		p.complete = true
 	}
 	p.log.Debug("appending packet to response",
