@@ -10,6 +10,7 @@ type Service struct {
 func (s Service) Uuid() string { return s.uuid }
 func (s Service) Name() string { return s.name }
 
+// Services represents only the valid Go-pro services that we are interested in.
 var Services = []Service{
 	wifiAccessPoint,
 	cameraNetworkMgmt,
