@@ -1,11 +1,7 @@
 package ble
 
 import (
-	"fmt"
 	"log"
-
-	pb "github.com/fuskovic/ble/protos"
-	"google.golang.org/protobuf/proto"
 )
 
 type TLV_RESPONSE_STATUS byte
@@ -37,29 +33,4 @@ type TlvResponse struct {
 	CommandID byte
 	Status    TLV_RESPONSE_STATUS
 	Payload   []byte
-}
-
-func decodeTlvResponse(b []byte) error {
-	for _, pb := range pb.IDs {
-		if b[0] == pb.FeatureID() && b[1] == pb.FeatureID() {
-			x := pb.DataStructure()
-			if err := proto.Unmarshal(b, x); err != nil {
-				return fmt.Errorf("failed to unmarshal data structure: %s", err)
-			}
-		}
-	}
-	// TODO:
-	// Handle non-pb payload.
-	//
-	// Nope. It is a TLV response
-	// if U == GP-0072 (Command) {
-	// 	Parse message payload using Command Table with Command scheme
-	// }
-	// else if U == GP-0074 (Settings) {
-	// 	Parse using Setting ID mapping with Command scheme
-	// }
-	// else if U == GP-0076 (Query) {
-	// 	Parse message payload using Query Table with Query scheme
-	// }
-	return nil
 }

@@ -1,11 +1,7 @@
 package ble
 
 import (
-	"fmt"
 	"log/slog"
-
-	pb "github.com/fuskovic/ble/protos"
-	"google.golang.org/protobuf/proto"
 )
 
 const (
@@ -44,28 +40,6 @@ type payload struct {
 	complete           bool
 	characteristicUuid string
 	log                *slog.Logger
-}
-
-func (p *payload) decode() error {
-	switch p.characteristicUuid {
-	case CmdRequest.uuid, CmdResponse.uuid:
-		// TODO
-	case QueryReq.uuid, QueryResp.uuid:
-		// TODO
-	case SettingsReq.uuid, SettingsResp.uuid:
-		// TODO
-	default:
-		// it's a protobuf message
-		for _, pb := range pb.IDs {
-			if p.bytes[0] == pb.FeatureID() && p.bytes[1] == pb.FeatureID() {
-				x := pb.DataStructure()
-				if err := proto.Unmarshal(p.bytes, x); err != nil {
-					return fmt.Errorf("failed to unmarshal data structure: %s", err)
-				}
-			}
-		}
-	}
-	return nil
 }
 
 // The BLE protocol limits packet size to 20 bytes per packet.
