@@ -13,11 +13,14 @@ This implementation uses [TinyGo](https://tinygo.org/).
 
 ![tg](images/tg.png)
 
-### Why?
+### What does it do?
 
-To connect to your GoPro via BlueTooth in order to and enable it's WIFI AP ( This can only be done programmatically ). 
+1. Connects to your GoPro via BLE.
+2. Using BLE, enables the WIFI access point on your GoPro (can only be done programmatically)
+3. Retrieves the credentials for the access point
+4. Connects to the access point.
 
-Once enabled, you can use something like https://github.com/chrisjoyce911/goprowifi to connect to that access point and begin working with your GoPro programmatically.
+
 
 ### Considerations
 
@@ -36,11 +39,8 @@ This was manually tested on a GoPro Hero 12 Black and OSX.
 
         go run examples/enable-wap/main.go
 
-4. Use the credentials in the output to connect to your GoPro
+4. Verify connectivity
 
-![credentials](images/credentials.png)
-
-![ssid](images/ssid.png)
 ![connected](images/connected.png)
 
 ### How it works
