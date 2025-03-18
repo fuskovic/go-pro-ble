@@ -2,12 +2,7 @@ module github.com/fuskovic/go-pro-ble
 
 go 1.23.2
 
-replace github.com/fuskovic/ble/protos => ./protos
-
-require (
-	github.com/fuskovic/ble/protos v0.0.0-00010101000000-000000000000
-	tinygo.org/x/bluetooth v0.10.0
-)
+require tinygo.org/x/bluetooth v0.10.0
 
 require (
 	github.com/go-ole/go-ole v1.2.6 // indirect
@@ -20,5 +15,4 @@ require (
 	github.com/tinygo-org/pio v0.0.0-20231216154340-cd888eb58899 // indirect
 	golang.org/x/exp v0.0.0-20230728194245-b0cb94b80691 // indirect
 	golang.org/x/sys v0.11.0 // indirect
-	google.golang.org/protobuf v1.35.1 // indirect
 )
