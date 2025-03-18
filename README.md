@@ -2,7 +2,7 @@
 
 ### What is this?
 
-This is a Go implementation of the following OpenGoPro Python scripts:
+This is a Go implementation of the following OpenGoPro Python logic:
 - [connect_ble.py](https://github.com/gopro/OpenGoPro/blob/main/demos/python/tutorial/tutorial_modules/tutorial_1_connect_ble/ble_connect.py)
 - [enable_wifi_ap.py](https://github.com/gopro/OpenGoPro/blob/main/demos/python/tutorial/tutorial_modules/tutorial_6_connect_wifi/enable_wifi_ap.py)
 - [connect_as_sta.py](https://github.com/gopro/OpenGoPro/blob/main/demos/python/tutorial/tutorial_modules/tutorial_6_connect_wifi/connect_as_sta.py)
@@ -29,6 +29,10 @@ Once connected, you'll be able to access your [GoPro's HTTP API](https://gopro.g
 If you have an older GoPro ( <= HERO5 ), you can try https://github.com/chrisjoyce911/goprowifi.
 
 For new GoPro's like the one I have ( >= HERO12 ), I plan on writing a higher level client/sdk using this pkg as it's base to solve for wireless connectivity.
+
+### Writing your own client/sdk?
+
+See the [connect example](https://github.com/fuskovic/go-pro-ble/blob/main/examples/connect/main.go)
 
 ### Considerations
 
