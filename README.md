@@ -20,21 +20,15 @@ This implementation uses [TinyGo](https://tinygo.org/).
 3. Retrieves the credentials for the AP.
 4. Uses those credentials to authenticate and establish a connection to the AP
 
-### Then what?
+### Why?
 
-Once connected, you'll have access to your [GoPro's HTTP API](https://gopro.github.io/OpenGoPro/http).
+Once connected, you'll be able to access your [GoPro's HTTP API](https://gopro.github.io/OpenGoPro/http).
 
 ### How?
 
-There is an existing HTTP client here https://github.com/chrisjoyce911/goprowifi but, that pkg doesn't support establishing wireless connectivity.
+If you have an older GoPro ( <= HERO5 ), you can try https://github.com/chrisjoyce911/goprowifi.
 
-So before this pkg came along, you had to use [OpenGoPro Python scripts](https://github.com/gopro/OpenGoPro/tree/main/demos/python/tutorial/tutorial_modules) for wireless connections first.
-
-Also, it's pretty old and is for older GoPro's ( <= HERO5 ).
-
-But now, you can use this pkg to solve for wireless connectivity.
-
-For new GoPro's like the one I have (HERO12+), I plan on writing a higher level client/sdk using this pkg as it's base.
+For new GoPro's like the one I have ( >= HERO12 ), I plan on writing a higher level client/sdk using this pkg as it's base to solve for wireless connectivity.
 
 ### Considerations
 
