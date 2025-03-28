@@ -18,47 +18,16 @@ var (
 
 // ConnectToWifiAccessPoint is for Darwin systems only.
 func ConnectToWifiAccessPoint(ssid, password string) error {
-	var cmd *exec.Cmd
 	switch runtime.GOOS {
 	case "linux":
-		interfaceName, err := getWirelessInterfaceLinux()
-		if err != nil {
-			return fmt.Errorf("failed to detect wireless interface for linux: %w", err)
-		}
-		cmd = exec.Command("nmcli", "dev", "wifi", "connect", ssid, "password", password, "iface", interfaceName)
+		return connectLinux(ssid, password)
 	case "windows":
-		profile := fmt.Sprintf(windowsWifiProfileXML, ssid, ssid, password)
-
-		tmpFile := fmt.Sprintf("%s.xml", ssid)
-		err := os.WriteFile(tmpFile, []byte(profile), 0644)
-		if err != nil {
-			return fmt.Errorf("failed to write profile XML: %w", err)
-		}
-		defer os.Remove(tmpFile)
-
-		addCmd := exec.Command("netsh", "wlan", "add", "profile", fmt.Sprintf("filename=%s", tmpFile), "user=current")
-		addOut, err := addCmd.CombinedOutput()
-		if err != nil {
-			return fmt.Errorf("failed to add profile: %v\nOutput: %s", err, string(addOut))
-		}
-
-		connectCmd := exec.Command("netsh", "wlan", "connect", fmt.Sprintf("name=%s", ssid))
-		connectOut, err := connectCmd.CombinedOutput()
-		if err != nil {
-			return fmt.Errorf("failed to connect: %w;\noutput: %s", err, string(connectOut))
-		}
-		return nil
+		return connectWindows(ssid, password)
 	case "darwin":
-		cmd = exec.Command("networksetup", "-setairportnetwork", "en0", ssid, password)
+		return connectDarwin(ssid, password)
 	default:
 		return errUnsupportedOs
 	}
-
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		return fmt.Errorf("failed to connect to %q: %s", err, output)
-	}
-	return nil
 }
 
 func getWirelessInterfaceLinux() (string, error) {
@@ -104,3 +73,49 @@ var windowsWifiProfileXML = `
 	</MSM>
 </WLANProfile>
 `
+
+func connectWindows(ssid, password string) error {
+	profile := fmt.Sprintf(windowsWifiProfileXML, ssid, ssid, password)
+
+	tmpFile := fmt.Sprintf("%s.xml", ssid)
+	err := os.WriteFile(tmpFile, []byte(profile), 0644)
+	if err != nil {
+		return fmt.Errorf("failed to write profile XML: %w", err)
+	}
+	defer os.Remove(tmpFile)
+
+	addCmd := exec.Command("netsh", "wlan", "add", "profile", fmt.Sprintf("filename=%s", tmpFile), "user=current")
+	addOut, err := addCmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("failed to add profile: %v\nOutput: %s", err, string(addOut))
+	}
+
+	connectCmd := exec.Command("netsh", "wlan", "connect", fmt.Sprintf("name=%s", ssid))
+	connectOut, err := connectCmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("failed to connect: %w;\noutput: %s", err, connectOut)
+	}
+	return nil
+}
+
+func connectLinux(ssid, password string) error {
+	interfaceName, err := getWirelessInterfaceLinux()
+	if err != nil {
+		return fmt.Errorf("failed to detect wireless interface for linux: %w", err)
+	}
+	cmd := exec.Command("nmcli", "dev", "wifi", "connect", ssid, "password", password, "iface", interfaceName)
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("failed to connect: %w;\noutput: %s", err, output)
+	}
+	return nil
+}
+
+func connectDarwin(ssid, password string) error {
+	cmd := exec.Command("networksetup", "-setairportnetwork", "en0", ssid, password)
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("failed to connect: %w;\noutput: %s", err, output)
+	}
+	return nil
+}
