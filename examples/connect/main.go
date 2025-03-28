@@ -42,10 +42,10 @@ func main() {
 		log.Fatalf("failed to read wifi password: %v\n", err)
 	}
 
-	log.Println("you can now connect to your GoPro's wifi-access-point using the following credentials")
+	log.Println("wifi access point enabled")
 	log.Printf("ssid: %s\n", wifiSsid)
 	log.Printf("password: %s\n", wifiPw)
-
+	log.Println("connecting...")
 	if err := ble.ConnectToWifiAccessPoint(wifiSsid, wifiPw); err != nil {
 		log.Fatalf("failed to connect to wifi access point: %v\n", err)
 	}
