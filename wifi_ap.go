@@ -1,5 +1,3 @@
-//go:build darwin
-
 package ble
 
 import (
@@ -16,7 +14,8 @@ var (
 	errNoInterface   = errors.New("no wireless interface found")
 )
 
-// ConnectToWifiAccessPoint is for Darwin systems only.
+// ConnectToWifiAccessPoint supports Darwin, Linux, and Windows.
+// For linux, nmcli is required.
 func ConnectToWifiAccessPoint(ssid, password string) error {
 	switch runtime.GOOS {
 	case "linux":
